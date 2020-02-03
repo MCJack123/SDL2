@@ -211,39 +211,26 @@ static void ApplyWindowSettings(SDL_WindowData *wdata)
     double scaled_w, scaled_h;
     double css_w, css_h;
 
-    /* Allocate window internal data */
-    wdata = (SDL_WindowData *) SDL_calloc(1, sizeof(SDL_WindowData));
-    if (wdata == NULL) {
-        SDL_OutOfMemory();
+    if (!wdata) {
         return;
-    }
-
-    wdata->canvas_id = SDL_strdup("#canvas");
-
-    if (window->flags & SDL_WINDOW_ALLOW_HIGHDPI) {
-        wdata->pixel_ratio = emscripten_get_device_pixel_ratio();
-    } else {
-        wdata->pixel_ratio = 1.0f;
     }
     window = wdata->window;
 
     scaled_w = SDL_floor(window->w * wdata->pixel_ratio);
     scaled_h = SDL_floor(window->h * wdata->pixel_ratio);
 
-    /* set a fake size to check if there is any CSS sizing the canvas */
-    emscripten_set_canvas_element_size(wdata->canvas_id, 1, 1);
-    emscripten_get_element_css_size(wdata->canvas_id, &css_w, &css_h);
+    emscripten_set_canvas_size(scaled_w, scaled_h);
 
-    wdata->external_size = SDL_floor(css_w) != 1 || SDL_floor(css_h) != 1;
+    emscripten_get_element_css_size(wdata->canvas_id, &css_w, &css_h);
 
     if ((window->flags & SDL_WINDOW_RESIZABLE) && wdata->external_size) {
         /* external css has resized us */
         scaled_w = css_w * wdata->pixel_ratio;
         scaled_h = css_h * wdata->pixel_ratio;
 
+        emscripten_set_canvas_size(scaled_w, scaled_h);
         SDL_SendWindowEvent(window, SDL_WINDOWEVENT_RESIZED, css_w, css_h);
     }
-    emscripten_set_canvas_element_size(wdata->canvas_id, scaled_w, scaled_h);
 
     /* if the size is not being controlled by css, we need to scale down for hidpi */
     if (!wdata->external_size) {
@@ -295,6 +282,8 @@ Emscripten_CreateWindow(_THIS, SDL_Window * window)
         return SDL_OutOfMemory();
     }
 
+    wdata->canvas_id = SDL_strdup("#canvas");
+
     if (window->flags & SDL_WINDOW_ALLOW_HIGHDPI) {
         wdata->pixel_ratio = emscripten_get_device_pixel_ratio();
     } else {
@@ -304,10 +293,30 @@ Emscripten_CreateWindow(_THIS, SDL_Window * window)
     scaled_w = SDL_floor(window->w * wdata->pixel_ratio);
     scaled_h = SDL_floor(window->h * wdata->pixel_ratio);
 
-    emscripten_get_element_css_size(NULL, &css_w, &css_h);
+    /* set a fake size to check if there is any CSS sizing the canvas */
+    emscripten_set_canvas_element_size(wdata->canvas_id, 1, 1);
+    emscripten_get_element_css_size(wdata->canvas_id, &css_w, &css_h);
 
-    wdata->external_size = SDL_floor(css_w) != scaled_w || SDL_floor(css_h) != scaled_h;
+    wdata->external_size = SDL_floor(css_w) != 1 || SDL_floor(css_h) != 1;
 
+    if ((window->flags & SDL_WINDOW_RESIZABLE) && wdata->external_size) {
+        /* external css has resized us */
+        scaled_w = css_w * wdata->pixel_ratio;
+        scaled_h = css_h * wdata->pixel_ratio;
+
+        SDL_SendWindowEvent(window, SDL_WINDOWEVENT_RESIZED, css_w, css_h);
+    }
+    emscripten_set_canvas_element_size(wdata->canvas_id, scaled_w, scaled_h);
+
+    /* if the size is not being controlled by css, we need to scale down for hidpi */
+    if (!wdata->external_size) {
+        if (wdata->pixel_ratio != 1.0f) {
+            /*scale canvas down*/
+            emscripten_set_element_css_size(wdata->canvas_id, window->w, window->h);
+        }
+    }
+
+#if SDL_VIDEO_OPENGL_EGL
     if (window->flags & SDL_WINDOW_OPENGL) {
         if (!_this->egl_data) {
             if (SDL_GL_LoadLibrary(NULL) < 0) {
@@ -320,8 +329,7 @@ Emscripten_CreateWindow(_THIS, SDL_Window * window)
             return SDL_SetError("Could not create GLES window surface");
         }
     }
-
-    window->flags |= SDL_WINDOW_FOREIGN;
+#endif
 
     wdata->window = window;
 
