@@ -53,6 +53,8 @@ typedef struct SDL_WindowData
     SDL_FingerID first_finger;
 
     SDL_bool has_pointer_lock;
+    /* we have single canvas that reflects only one window at a time */
+    SDL_bool selected;
 } SDL_WindowData;
 
 #endif /* SDL_emscriptenvideo_h_ */
