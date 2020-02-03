@@ -25,6 +25,7 @@
 
 #include "../SDL_sysvideo.h"
 #include "../../events/SDL_touch_c.h"
+#include <emscripten.h>
 #include <emscripten/emscripten.h>
 #include <emscripten/html5.h>
 
