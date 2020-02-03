@@ -214,7 +214,8 @@ static void ApplyWindowSettings(SDL_WindowData *wdata)
     /* Allocate window internal data */
     wdata = (SDL_WindowData *) SDL_calloc(1, sizeof(SDL_WindowData));
     if (wdata == NULL) {
-        return SDL_OutOfMemory();
+        SDL_OutOfMemory();
+        return;
     }
 
     wdata->canvas_id = SDL_strdup("#canvas");
