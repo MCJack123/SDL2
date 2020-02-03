@@ -27,7 +27,6 @@
 #include "../../events/SDL_touch_c.h"
 #include <emscripten/emscripten.h>
 #include <emscripten/html5.h>
-int emscripten_has_asyncify();
 
 #if SDL_VIDEO_OPENGL_EGL
 #include <EGL/egl.h>
