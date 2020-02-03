@@ -297,15 +297,6 @@ Emscripten_ConvertUTF32toUTF8(Uint32 codepoint, char * text)
     return SDL_TRUE;
 }
 
-static EM_BOOL
-Emscripten_HandlePointerLockChange(int eventType, const EmscriptenPointerlockChangeEvent *changeEvent, void *userData)
-{
-    SDL_WindowData *window_data = GetCurrentWindowData();
-    /* keep track of lock losses, so we can regrab if/when appropriate. */
-    window_data->has_pointer_lock = changeEvent->isActive;
-    return 0;
-}
-
 static SDL_WindowData *wdata;
 static SDL_WindowData *GetCurrentWindowData(void) {
 #ifdef EMSCRIPTEN_HAS_WINDOW_SELECTOR
@@ -316,6 +307,15 @@ static SDL_WindowData *GetCurrentWindowData(void) {
 #else
     return wdata;
 #endif
+}
+
+static EM_BOOL
+Emscripten_HandlePointerLockChange(int eventType, const EmscriptenPointerlockChangeEvent *changeEvent, void *userData)
+{
+    SDL_WindowData *window_data = GetCurrentWindowData();
+    /* keep track of lock losses, so we can regrab if/when appropriate. */
+    window_data->has_pointer_lock = changeEvent->isActive;
+    return 0;
 }
 
 EM_BOOL
