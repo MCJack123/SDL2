@@ -153,7 +153,7 @@ int Emscripten_UpdateWindowFramebuffer(_THIS, SDL_Window * window, const SDL_Rec
 
         SDL2.ctx.putImageData(SDL2.image, 0, 0);
         return 0;
-    }, surface->w, surface->h, surface->pixels);
+    }, surface->w * data->pixel_ratio, surface->h * data->pixel_ratio, surface->pixels);
 
     /*if (SDL_getenv("SDL_VIDEO_Emscripten_SAVE_FRAMES")) {
         static int frame_number = 0;
