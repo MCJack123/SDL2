@@ -43,7 +43,7 @@ static int Emscripten_VideoInit(_THIS);
 static int Emscripten_SetDisplayMode(_THIS, SDL_VideoDisplay * display, SDL_DisplayMode * mode);
 static void Emscripten_VideoQuit(_THIS);
 static int Emscripten_GetDisplayUsableBounds(_THIS, SDL_VideoDisplay * display, SDL_Rect * rect);
-
+static int Emscripten_GetDisplayDPI(_THIS, SDL_VideoDisplay * display, float * ddpi, float * hdpi, float * vdpi);
 static int Emscripten_CreateWindow(_THIS, SDL_Window * window);
 static void Emscripten_SetWindowSize(_THIS, SDL_Window * window);
 static void Emscripten_DestroyWindow(_THIS, SDL_Window * window);
@@ -89,7 +89,7 @@ Emscripten_CreateDevice(int devindex)
     device->VideoQuit = Emscripten_VideoQuit;
     device->GetDisplayUsableBounds = Emscripten_GetDisplayUsableBounds;
     device->SetDisplayMode = Emscripten_SetDisplayMode;
-
+    device->GetDisplayDPI = Emscripten_GetDisplayDPI;
 
     device->PumpEvents = Emscripten_PumpEvents;
 
@@ -371,6 +371,37 @@ Emscripten_SetWindowTitle(_THIS, SDL_Window * window) {
       }
       return 0;
     }, window->title);
+}
+
+static int
+Emscripten_GetDisplayDPI(_THIS, SDL_VideoDisplay * display, float * ddpi, float * hdpi, float * vdpi) {
+    #ifdef SDL_EMSCRIPTEN_SUPER_ACCURATE_DPI
+    float base = EM_ASM_DOUBLE({
+        for (var i = 1; i < 500; i++) {
+          if (window.matchMedia('(resolution: ' + i + 'dpi)').matches) {
+            return i;
+          }
+        }
+        return -1;
+    });
+    #else
+    float base = EM_ASM_DOUBLE({
+        return window.devicePixelRatio * 96.0;
+    });
+    #endif
+    if (base <= 0.0) {
+        return SDL_SetError("Could not get display DPI");
+    }
+    if (ddpi != NULL) {
+        *ddpi = base;
+    }
+    if (hdpi != NULL) {
+        *hdpi = base;
+    }
+    if (vdpi != NULL) {
+        *vdpi = base;
+    }
+    return 0;
 }
 
 #endif /* SDL_VIDEO_DRIVER_EMSCRIPTEN */
